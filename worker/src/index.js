@@ -94,7 +94,7 @@ async function buildStatusMessage(env) {
     return "未配置后端地址，请设置 BACKEND_URLS 环境变量。";
   }
 
-  const results = await mapWithLimit(targets, MAX_CONCURRENCY, (target) =>
+  const results = await mapWithLimit(targets, MAX_CONCURRENCY, (target, index) =>
     fetchBackendInfo(target.url)
   );
 
