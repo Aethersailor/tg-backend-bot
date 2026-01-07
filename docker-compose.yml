@@ -1,0 +1,21 @@
+version: '3'
+
+services:
+  tg-bot:
+    image: aethersailor/tg-backend-bot:latest
+    container_name: tg-backend-bot
+    restart: unless-stopped
+    environment:
+      BOT_TOKEN: "YOUR_BOT_TOKEN"
+      BACKEND_URLS: "api.asailor.org,example.com:25500"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    healthcheck:
+      test: ["CMD", "/tg-backend-bot", "--healthcheck"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
