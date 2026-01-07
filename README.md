@@ -35,7 +35,7 @@ services:
     image: aethersailor/tg-backend-bot:latest
     environment:
       BOT_TOKEN: "YOUR_BOT_TOKEN"
-      BACKEND_URLS: "api.asailor.org,example.com:25500"
+      BACKEND_URLS: "api.asailor.org,legacy-api.asailor.org,example.com:25500"
 ```
 
 ### 3. 启动与日志
@@ -55,33 +55,22 @@ docker compose logs -f
 3) 打开 Settings -> Variables and Secrets，配置：
    - `BOT_TOKEN` (Secret，必填)
    - `WEBHOOK_SECRET` (Secret，可选，用于校验 Telegram webhook，可用随机字符串)
-   - `BACKEND_URLS` (变量，可选，示例：`api.asailor.org,example.com:25500`)
+   - `BACKEND_URLS` (变量，可选，示例：`api.asailor.org,legacy-api.asailor.org,example.com:25500`)
 4) 设置 Telegram Webhook（见下方命令）
 
 一键部署按钮：
 
 [![Deploy to Cloudflare Workers](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/Aethersailor/tg-backend-bot)
 
-### 方案 B：手动部署 (wrangler)
-```bash
-# 安装 wrangler
-npm install -g wrangler
-
-cd worker
-wrangler login
-
-# 设置 BOT_TOKEN (必需)
-wrangler secret put BOT_TOKEN
-
-# 可选：设置 WEBHOOK_SECRET
-wrangler secret put WEBHOOK_SECRET
-
-# 设置后端地址列表 (可选)
-wrangler vars set BACKEND_URLS "api.asailor.org,example.com:25500"
-
-# 部署
-wrangler deploy
-```
+### 方案 B：手动部署（控制台）
+1) 进入 Cloudflare Dashboard -> Workers & Pages -> Create -> Workers -> Start from scratch  
+2) 设置 Worker 名称并点击 Deploy  
+3) 进入 Worker 代码编辑页，将 `worker/src/index.js` 的内容粘贴覆盖，点击 Save and Deploy  
+4) 打开 Settings -> Variables and Secrets，配置：  
+   - `BOT_TOKEN` (Secret，必填)  
+   - `WEBHOOK_SECRET` (Secret，可选，用于校验 Telegram webhook，可用随机字符串)  
+   - `BACKEND_URLS` (变量，可选，示例：`api.asailor.org,example.com:25500`)  
+5) 设置 Telegram Webhook（见下方命令）
 
 ### 设置 Telegram Webhook
 ```bash

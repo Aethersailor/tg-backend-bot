@@ -3,4 +3,4 @@ main = "src/index.js"
 compatibility_date = "2024-11-01"
 
 [vars]
-BACKEND_URLS = "api.asailor.org"
+BACKEND_URLS = "api.asailor.org,legacy-api.asailor.org"
