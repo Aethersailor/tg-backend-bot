@@ -238,29 +238,29 @@ func isBackendCommand(text string) bool {
 }
 
 func buildStatusMessage(client *http.Client) string {
-    targets, truncated := loadBackendTargets()
-    if len(targets) == 0 {
-        return "未配置后端地址，请设置 BACKEND_URLS 环境变量。"
-    }
+	targets, truncated := loadBackendTargets()
+	if len(targets) == 0 {
+		return "未配置后端地址，请设置 BACKEND_URLS 环境变量。"
+	}
 
     results := checkBackends(client, targets)
     blocks := make([]string, 0, len(results))
-    onlineCount := 0
+	onlineCount := 0
 
-    for i, result := range results {
-        if result.ok {
-            onlineCount++
+	for i, result := range results {
+		if result.ok {
+			onlineCount++
         }
         blocks = append(blocks, formatBackendBlock(i+1, targets[i].display, result))
     }
 
-    offlineCount := len(results) - onlineCount
-    title := fmt.Sprintf("📡 后端状态 (%d) ✅ %d / ❌ %d", len(results), onlineCount, offlineCount)
-    if truncated {
-        title += fmt.Sprintf(" - 仅显示前 %d 个", maxBackends)
-    }
+	offlineCount := len(results) - onlineCount
+	title := fmt.Sprintf("后端状态 (%d) 在线 %d / 离线 %d", len(results), onlineCount, offlineCount)
+	if truncated {
+		title += fmt.Sprintf(" - 仅显示前 %d 个", maxBackends)
+	}
 
-    return title + "\n\n" + strings.Join(blocks, "\n\n")
+	return title + "\n\n" + strings.Join(blocks, "\n\n")
 }
 
 func checkBackends(client *http.Client, targets []backendTarget) []backendResult {
@@ -385,47 +385,39 @@ func compactSnippet(text string, limit int) string {
 }
 
 func formatBackendBlock(index int, display string, result backendResult) string {
-    lines := []string{fmt.Sprintf("🔗 [%d] %s", index, display)}
+	lines := []string{fmt.Sprintf("[%d] %s", index, display)}
 
-    if !result.ok {
-        lines = append(lines, "类型: ❓ 未知")
-        lines = append(lines, "状态: ❌ 离线")
-        if result.err != "" {
-            lines = append(lines, fmt.Sprintf("错误: ⚠️ %s", result.err))
-        }
-        return strings.Join(lines, "\n")
-    }
+	if !result.ok {
+		lines = append(lines, "类型: 未知")
+		lines = append(lines, "状态: 离线")
+		if result.err != "" {
+			lines = append(lines, fmt.Sprintf("错误: %s", result.err))
+		}
+		return strings.Join(lines, "\n")
+	}
 
-    switch result.typ {
-    case "SubConverter-Extended":
-        lines = append(lines, "类型: ✨ SubConverter-Extended")
-    case "subconverter":
-        lines = append(lines, "类型: 🧩 subconverter")
-    default:
-        lines = append(lines, "类型: ❓ unknown")
-    }
+	lines = append(lines, fmt.Sprintf("类型: %s", result.typ))
+	lines = append(lines, "状态: 在线")
 
-    lines = append(lines, "状态: ✅ 在线")
+	if result.typ == "SubConverter-Extended" {
+		if result.info.version != "" {
+			lines = append(lines, fmt.Sprintf("版本: %s", result.info.version))
+		}
+		if result.info.build != "" {
+			lines = append(lines, fmt.Sprintf("构建: %s", result.info.build))
+		}
+		if result.info.buildDate != "" {
+			lines = append(lines, fmt.Sprintf("构建日期: %s", result.info.buildDate))
+		}
+	} else if result.typ == "subconverter" {
+		if result.info.version != "" {
+			lines = append(lines, fmt.Sprintf("版本: %s", result.info.version))
+		}
+	} else if result.info.snippet != "" {
+		lines = append(lines, fmt.Sprintf("内容: %s", result.info.snippet))
+	}
 
-    if result.typ == "SubConverter-Extended" {
-        if result.info.version != "" {
-            lines = append(lines, fmt.Sprintf("🔖 Version: %s", result.info.version))
-        }
-        if result.info.build != "" {
-            lines = append(lines, fmt.Sprintf("🧱 Build: %s", result.info.build))
-        }
-        if result.info.buildDate != "" {
-            lines = append(lines, fmt.Sprintf("📅 Build Date: %s", result.info.buildDate))
-        }
-    } else if result.typ == "subconverter" {
-        if result.info.version != "" {
-            lines = append(lines, fmt.Sprintf("🔖 版本: %s", result.info.version))
-        }
-    } else if result.info.snippet != "" {
-        lines = append(lines, fmt.Sprintf("📝 内容: %s", result.info.snippet))
-    }
-
-    return strings.Join(lines, "\n")
+	return strings.Join(lines, "\n")
 }
 
 func loadBackendTargets() ([]backendTarget, bool) {

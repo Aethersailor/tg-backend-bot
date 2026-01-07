@@ -107,7 +107,7 @@ async function buildStatusMessage(env) {
   });
 
   const offlineCount = results.length - onlineCount;
-  let title = `📡 后端状态 (${results.length}) ✅ ${onlineCount} / ❌ ${offlineCount}`;
+  let title = `后端状态 (${results.length}) 在线 ${onlineCount} / 离线 ${offlineCount}`;
   if (truncated) {
     title += ` - 仅显示前 ${MAX_BACKENDS} 个`;
   }
@@ -228,43 +228,36 @@ function compactSnippet(text, limit) {
 }
 
 function formatBackendBlock(index, display, result) {
-  const lines = [`🔗 [${index}] ${display}`];
+  const lines = [`[${index}] ${display}`];
 
   if (!result.ok) {
-    lines.push("类型: ❓ 未知");
-    lines.push("状态: ❌ 离线");
+    lines.push("类型: 未知");
+    lines.push("状态: 离线");
     if (result.error) {
-      lines.push(`错误: ⚠️ ${result.error}`);
+      lines.push(`错误: ${result.error}`);
     }
     return lines.join("\n");
   }
 
-  if (result.type === "SubConverter-Extended") {
-    lines.push("类型: ✨ SubConverter-Extended");
-  } else if (result.type === "subconverter") {
-    lines.push("类型: 🧩 subconverter");
-  } else {
-    lines.push("类型: ❓ unknown");
-  }
-
-  lines.push("状态: ✅ 在线");
+  lines.push(`类型: ${result.type}`);
+  lines.push("状态: 在线");
 
   if (result.type === "SubConverter-Extended") {
     if (result.info.version) {
-      lines.push(`🔖 Version: ${result.info.version}`);
+      lines.push(`版本: ${result.info.version}`);
     }
     if (result.info.build) {
-      lines.push(`🧱 Build: ${result.info.build}`);
+      lines.push(`构建: ${result.info.build}`);
     }
     if (result.info.build_date) {
-      lines.push(`📅 Build Date: ${result.info.build_date}`);
+      lines.push(`构建日期: ${result.info.build_date}`);
     }
   } else if (result.type === "subconverter") {
     if (result.info.version) {
-      lines.push(`🔖 版本: ${result.info.version}`);
+      lines.push(`版本: ${result.info.version}`);
     }
   } else if (result.info.snippet) {
-    lines.push(`📝 内容: ${result.info.snippet}`);
+    lines.push(`内容: ${result.info.snippet}`);
   }
 
   return lines.join("\n");
