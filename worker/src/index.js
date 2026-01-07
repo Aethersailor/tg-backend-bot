@@ -216,7 +216,8 @@ function parseExtendedInfo(text) {
 }
 
 function stripHtml(value) {
-  return value.replace(TAG_PATTERN, "").trim();
+  // First remove simple tag-like patterns, then ensure no angle brackets remain.
+  return value.replace(TAG_PATTERN, "").replace(/[<>]/g, "").trim();
 }
 
 function compactSnippet(text, limit) {
