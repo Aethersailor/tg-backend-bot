@@ -216,8 +216,23 @@ function parseExtendedInfo(text) {
 }
 
 function stripHtml(value) {
-  // First remove simple tag-like patterns, then ensure no angle brackets remain.
-  return value.replace(TAG_PATTERN, "").replace(/[<>]/g, "").trim();
+  // Normalize whitespace first.
+  let cleaned = String(value).replace(/\s+/g, " ");
+
+  // Aggressively remove any script-like substrings in a loop to avoid
+  // incomplete multi-character sanitization issues.
+  let previous;
+  do {
+    previous = cleaned;
+    cleaned = cleaned
+      .replace(/<script/gi, "")
+      .replace(/<\/script/gi, "");
+  } while (cleaned !== previous);
+
+  // Remove simple tag-like patterns, then ensure no angle brackets remain.
+  cleaned = cleaned.replace(TAG_PATTERN, "").replace(/[<>]/g, "");
+
+  return cleaned.trim();
 }
 
 function compactSnippet(text, limit) {
