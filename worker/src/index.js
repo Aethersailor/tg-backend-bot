@@ -10,6 +10,8 @@ const EXTENDED_MARKER = /SubConverter-Extended/i;
 const INFO_CARD_PATTERN = /<span class="info-label">\s*(Version|Build|Build Date)\s*<\/span>\s*<div class="info-value">(.*?)<\/div>/gis;
 const TAG_PATTERN = /<[^>]+>/g;
 const SCHEME_PATTERN = /^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//;
+const SCRIPT_BLOCK_PATTERN = /<script\b[^>]*>[\s\S]*?<\/script\s*>/gi;
+const SCRIPT_OPEN_CLOSE_PATTERN = /<\/?\s*script\b[^>]*>/gi;
 
 const BACKEND_HEADERS = {
   "User-Agent":
@@ -225,8 +227,8 @@ function stripHtml(value) {
   do {
     previous = cleaned;
     cleaned = cleaned
-      .replace(/<script/gi, "")
-      .replace(/<\/script/gi, "");
+      .replace(SCRIPT_BLOCK_PATTERN, "")
+      .replace(SCRIPT_OPEN_CLOSE_PATTERN, "");
   } while (cleaned !== previous);
 
   // Remove simple tag-like patterns, then ensure no angle brackets remain.
