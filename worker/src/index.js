@@ -10,7 +10,7 @@ const EXTENDED_MARKER = /SubConverter-Extended/i;
 const INFO_CARD_PATTERN = /<span class="info-label">\s*(Version|Build|Build Date)\s*<\/span>\s*<div class="info-value">(.*?)<\/div>/gis;
 const TAG_PATTERN = /<[^>]+>/g;
 const SCHEME_PATTERN = /^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//;
-const SCRIPT_BLOCK_PATTERN = /<script\b[^>]*>[\s\S]*?<\/script\s*>/gi;
+const SCRIPT_BLOCK_PATTERN = /<script\b[^>]*>[\s\S]*?<\/\s*script(?:[\s>][^>]*)?>/gi;
 const SCRIPT_OPEN_CLOSE_PATTERN = /<\/?\s*script\b[^>]*>/gi;
 
 const BACKEND_HEADERS = {
