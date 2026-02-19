@@ -11,6 +11,7 @@ const INFO_CARD_PATTERN = /<span class="info-label">\s*(Version|Build|Build Date
 const TAG_PATTERN = /<[^>]+>/g;
 const SCHEME_PATTERN = /^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//;
 const SCRIPT_BLOCK_PATTERN = /<script\b[^>]*>[\s\S]*?<\/\s*script(?:[\s>][^>]*)?>/gi;
+const SCRIPT_TAG_NAME_PATTERN = /script/gi;
 const SCRIPT_OPEN_CLOSE_PATTERN = /<\/?\s*script\b[^>]*>/gi;
 
 const BACKEND_HEADERS = {
@@ -230,6 +231,10 @@ function stripHtml(value) {
       .replace(SCRIPT_BLOCK_PATTERN, "")
       .replace(SCRIPT_OPEN_CLOSE_PATTERN, "");
   } while (cleaned !== previous);
+
+  // After removing full script blocks, strip any remaining "script"
+  // tag name fragments defensively.
+  cleaned = cleaned.replace(SCRIPT_TAG_NAME_PATTERN, "");
 
   // Remove simple tag-like patterns, then ensure no angle brackets remain.
   cleaned = cleaned.replace(TAG_PATTERN, "").replace(/[<>]/g, "");
