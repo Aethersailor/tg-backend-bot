@@ -29,10 +29,12 @@ const (
 )
 
 var (
-    versionPattern = regexp.MustCompile(`^subconverter\s+v[\d.]+-[\w]+ backend$`)
-    extendedMarker = regexp.MustCompile(`(?i)SubConverter-Extended`)
+    versionPattern       = regexp.MustCompile(`(?i)^subconverter\s+v[\d.]+-[\w]+ backend$`)
+    extendedMarker       = regexp.MustCompile(`(?i)SubConverter-Extended`)
+    extendedPlainPattern = regexp.MustCompile(`(?i)^SubConverter-Extended\s+(\S+)\s+backend$`)
+    buildIDPattern       = regexp.MustCompile(`(?i)^[0-9a-f]{7,40}$`)
     infoCardPattern = regexp.MustCompile(
-        `(?is)<span class="info-label">\s*(Version|Build|Build Date)\s*</span>\s*<div class="info-value">(.*?)</div>`,
+        `(?is)<span class="info-label">(.*?)</span>\s*<div class="info-value">(.*?)</div>`,
     )
     tagPattern        = regexp.MustCompile(`(?s)<[^>]+>`)
     whitespacePattern = regexp.MustCompile(`\s+`)
@@ -292,6 +294,9 @@ func fetchBackendInfo(client *http.Client, targetURL string) backendResult {
     }
     req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
     req.Header.Set("Accept", "text/plain,text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
+    req.Header.Set("Origin", "https://tg-backend-bot.invalid")
+    req.Header.Set("Sec-Fetch-Mode", "cors")
+    req.Header.Set("Sec-Fetch-Dest", "empty")
 
     resp, err := client.Do(req)
     if err != nil {
@@ -345,6 +350,12 @@ func parseExtendedInfo(text string) (backendInfo, bool) {
         return backendInfo{}, false
     }
 
+    trimmed := strings.TrimSpace(text)
+    if match := extendedPlainPattern.FindStringSubmatch(trimmed); len(match) == 2 {
+        version, build := splitExtendedVersion(match[1])
+        return backendInfo{version: version, build: build}, true
+    }
+
     matches := infoCardPattern.FindAllStringSubmatch(text, -1)
     if len(matches) == 0 {
         return backendInfo{}, false
@@ -352,16 +363,16 @@ func parseExtendedInfo(text string) (backendInfo, bool) {
 
     info := backendInfo{}
     for _, match := range matches {
-        label := strings.ToLower(strings.TrimSpace(match[1]))
+        label := strings.ToLower(stripHTML(match[1]))
         value := stripHTML(match[2])
 
-        switch label {
-        case "version":
-            info.version = value
-        case "build":
-            info.build = value
-        case "build date":
+        switch {
+        case strings.Contains(label, "build date"):
             info.buildDate = value
+        case strings.Contains(label, "version"):
+            info.version = value
+        case strings.Contains(label, "build"):
+            info.build = value
         }
     }
 
@@ -372,8 +383,18 @@ func parseExtendedInfo(text string) (backendInfo, bool) {
     return info, true
 }
 
+func splitExtendedVersion(value string) (string, string) {
+    if separator := strings.LastIndex(value, "-"); separator > 0 {
+        build := value[separator+1:]
+        if buildIDPattern.MatchString(build) {
+            return value[:separator], build
+        }
+    }
+    return value, ""
+}
+
 func stripHTML(value string) string {
-    return strings.TrimSpace(tagPattern.ReplaceAllString(value, ""))
+    return strings.TrimSpace(whitespacePattern.ReplaceAllString(tagPattern.ReplaceAllString(value, ""), " "))
 }
 
 func compactSnippet(text string, limit int) string {

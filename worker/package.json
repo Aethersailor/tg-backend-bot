@@ -1,0 +1,8 @@
+{
+  "name": "tg-backend-bot-worker",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test src/index.test.js"
+  }
+}

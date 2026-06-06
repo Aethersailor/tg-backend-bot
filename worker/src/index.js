@@ -7,7 +7,9 @@ const TELEGRAM_LIMIT = 3900;
 
 const VERSION_PATTERN = /^subconverter\s+v[\d.]+-[\w]+ backend$/i;
 const EXTENDED_MARKER = /SubConverter-Extended/i;
-const INFO_CARD_PATTERN = /<span class="info-label">\s*(Version|Build|Build Date)\s*<\/span>\s*<div class="info-value">(.*?)<\/div>/gis;
+const EXTENDED_PLAIN_PATTERN = /^SubConverter-Extended\s+(\S+)\s+backend$/i;
+const BUILD_ID_PATTERN = /^[0-9a-f]{7,40}$/i;
+const INFO_CARD_PATTERN = /<span class="info-label">(.*?)<\/span>\s*<div class="info-value">(.*?)<\/div>/gis;
 const TAG_PATTERN = /<[^>]+>/g;
 const SCHEME_PATTERN = /^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//;
 const SCRIPT_BLOCK_PATTERN = /<script\b[^>]*>[\s\S]*?<\/\s*script(?:[\s>][^>]*)?>/gi;
@@ -19,6 +21,9 @@ const BACKEND_HEADERS = {
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
   Accept:
     "text/plain,text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+  Origin: "https://tg-backend-bot.invalid",
+  "Sec-Fetch-Mode": "cors",
+  "Sec-Fetch-Dest": "empty",
   Connection: "keep-alive",
 };
 
@@ -195,20 +200,26 @@ function parseExtendedInfo(text) {
     return null;
   }
 
+  const plainMatch = text.trim().match(EXTENDED_PLAIN_PATTERN);
+  if (plainMatch) {
+    const { version, build } = splitExtendedVersion(plainMatch[1]);
+    return { version, build, build_date: "" };
+  }
+
   const info = { version: "", build: "", build_date: "" };
   let match;
   while ((match = INFO_CARD_PATTERN.exec(text))) {
-    const label = match[1].trim().toLowerCase();
+    const label = stripHtml(match[1]).toLowerCase();
     const value = stripHtml(match[2]);
     if (!value) {
       continue;
     }
-    if (label === "version") {
-      info.version = value;
-    } else if (label === "build") {
-      info.build = value;
-    } else if (label === "build date") {
+    if (label.includes("build date")) {
       info.build_date = value;
+    } else if (label.includes("version")) {
+      info.version = value;
+    } else if (label.includes("build")) {
+      info.build = value;
     }
   }
 
@@ -216,6 +227,17 @@ function parseExtendedInfo(text) {
     return null;
   }
   return info;
+}
+
+function splitExtendedVersion(value) {
+  const separator = value.lastIndexOf("-");
+  if (separator > 0) {
+    const build = value.slice(separator + 1);
+    if (BUILD_ID_PATTERN.test(build)) {
+      return { version: value.slice(0, separator), build };
+    }
+  }
+  return { version: value, build: "" };
 }
 
 function stripHtml(value) {
@@ -356,3 +378,5 @@ function trimMessage(text, limit) {
   }
   return `${text.slice(0, limit)}...`;
 }
+
+export { detectBackend, fetchBackendInfo, parseExtendedInfo };
