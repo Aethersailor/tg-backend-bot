@@ -9,12 +9,10 @@ const VERSION_PATTERN = /^subconverter\s+v[\d.]+-[\w]+ backend$/i;
 const EXTENDED_MARKER = /SubConverter-Extended/i;
 const EXTENDED_PLAIN_PATTERN = /^SubConverter-Extended\s+(\S+)\s+backend$/i;
 const BUILD_ID_PATTERN = /^[0-9a-f]{7,40}$/i;
-const INFO_CARD_PATTERN = /<span class="info-label">(.*?)<\/span>\s*<div class="info-value">(.*?)<\/div>/gis;
-const TAG_PATTERN = /<[^>]+>/g;
+const INFO_CARD_LABEL_PATTERN = /<span class="info-label">/i;
+const INFO_CARD_VALUE_PATTERN = /<\/span>\s*<div class="info-value">/i;
+const TAG_PATTERN = /<[^<>]*>/g;
 const SCHEME_PATTERN = /^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//;
-const SCRIPT_BLOCK_PATTERN = /<script\b[^>]*>[\s\S]*?<\/\s*script(?:[\s>][^>]*)?>/gi;
-const SCRIPT_TAG_NAME_PATTERN = /script/gi;
-const SCRIPT_OPEN_CLOSE_PATTERN = /<\/?\s*script\b[^>]*>/gi;
 
 const BACKEND_HEADERS = {
   "User-Agent":
@@ -207,10 +205,20 @@ function parseExtendedInfo(text) {
   }
 
   const info = { version: "", build: "", build_date: "" };
-  let match;
-  while ((match = INFO_CARD_PATTERN.exec(text))) {
-    const label = stripHtml(match[1]).toLowerCase();
-    const value = stripHtml(match[2]);
+  // Scan disjoint cards and their delimiters separately to avoid backtracking
+  // across repeated labels or incomplete values in an untrusted response.
+  for (const card of text.split(INFO_CARD_LABEL_PATTERN).slice(1)) {
+    const valueMarker = INFO_CARD_VALUE_PATTERN.exec(card);
+    if (!valueMarker) {
+      continue;
+    }
+    const valueText = card.slice(valueMarker.index + valueMarker[0].length);
+    const valueEnd = valueText.search(/<\/div>/i);
+    if (valueEnd < 0) {
+      continue;
+    }
+    const label = stripHtml(card.slice(0, valueMarker.index)).toLowerCase();
+    const value = stripHtml(valueText.slice(0, valueEnd));
     if (!value) {
       continue;
     }
@@ -241,27 +249,12 @@ function splitExtendedVersion(value) {
 }
 
 function stripHtml(value) {
-  // Normalize whitespace first.
-  let cleaned = String(value).replace(/\s+/g, " ");
-
-  // Aggressively remove any script-like substrings in a loop to avoid
-  // incomplete multi-character sanitization issues.
-  let previous;
-  do {
-    previous = cleaned;
-    cleaned = cleaned
-      .replace(SCRIPT_BLOCK_PATTERN, "")
-      .replace(SCRIPT_OPEN_CLOSE_PATTERN, "");
-  } while (cleaned !== previous);
-
-  // After removing full script blocks, strip any remaining "script"
-  // tag name fragments defensively.
-  cleaned = cleaned.replace(SCRIPT_TAG_NAME_PATTERN, "");
-
-  // Remove simple tag-like patterns, then ensure no angle brackets remain.
-  cleaned = cleaned.replace(TAG_PATTERN, "").replace(/[<>]/g, "");
-
-  return cleaned.trim();
+  // Telegram receives plain text without parse_mode; remove markup for display.
+  return String(value)
+    .replace(TAG_PATTERN, "")
+    .replace(/[<>]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function compactSnippet(text, limit) {

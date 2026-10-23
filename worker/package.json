@@ -2,5 +2,7 @@
   "name": "tg-backend-bot-worker",
   "private": true,
   "type": "module",
-  "scripts": {}
+  "scripts": {
+    "test": "node --test"
+  }
 }
